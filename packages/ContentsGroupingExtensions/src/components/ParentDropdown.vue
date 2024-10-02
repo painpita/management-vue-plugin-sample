@@ -78,8 +78,8 @@ export default {
     methods: {
         getMasterOptions() {
             this.masterOptions = Object.keys(this.$attrs.options).map((key) => {
-                const value = this.$attrs.options[key];
-                const slugs = key.replace(/\d+-/, '').split(',');
+                const value = this.$attrs.options[key].replace(/-.+/, '');
+                const slugs = this.$attrs.options[key].replace(/.+-/, '').split(',');
                 const idsFromSlugs = slugs.map((slug) => {
                     return this.extConfig.filter((data) => {
                         return data.ext_slug === slug || data.ext_index == slug;
@@ -108,8 +108,8 @@ export default {
                 return selected;
             }
             return this.$attrs.type === '29'
-                ? this.masterOptions?.find(({ key }) => key === selected)?.key || ''
-                : this.extOptions?.find(({ key }) => key === selected)?.key || '';
+                ? this.masterOptions?.find(({ key }) => key.split('-')[0] == selected.split('-')[0])?.key || ''
+                : this.extOptions?.find(({ key }) => key.split('-')[0] === selected.split('-')[0])?.key || '';
         },
     },
     mounted() {
