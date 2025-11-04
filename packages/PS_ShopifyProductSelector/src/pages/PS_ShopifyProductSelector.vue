@@ -91,7 +91,7 @@ import Vue from 'vue';
 import axios from 'axios';
 window.rcmsJS.vue.registerVM(Vue, rcms_js_config.publicPath); // eslint-disable-line
 export default {
-    name: 'PS_ShopifyProductSelector',
+    name: 'ShopifyProductSelector',
     components: {},
     props: {
         NUXT_SHOPIFY_STOREFRONT_DOMAIN: { type: String, default: '' },
@@ -227,7 +227,6 @@ export default {
     },
 };
 </script>
-<style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 <style scoped>
 .btn-default-width {
     width: 120px;

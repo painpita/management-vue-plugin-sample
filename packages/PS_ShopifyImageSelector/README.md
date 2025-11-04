@@ -1,8 +1,8 @@
-# PS_ShopifyImageSelector
+# ShopifyImageSelector
 
 [日本語](README.ja.md)
 
-Frontend code for PS_ShopifyImageSelector - A component to select images from Shopify products.
+Frontend code for ShopifyImageSelector - A component to select images from Shopify products.
 
 ## Prerequisites
 

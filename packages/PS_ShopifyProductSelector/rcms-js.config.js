@@ -1,5 +1,5 @@
 module.exports = {
-    name: 'PS_ShopifyProductSelector',
+    name: 'ShopifyProductSelector',
     path: 'dist',
     publicPath: '/files/user/mng_vue_components',
 

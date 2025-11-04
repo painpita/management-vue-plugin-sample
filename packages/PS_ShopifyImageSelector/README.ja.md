@@ -1,8 +1,8 @@
-# PS_ShopifyImageSelector
+# ShopifyImageSelector
 
 [English](README.md)
 
-PS_ShopifyImageSelector のフロントエンドコードです。Shopify商品から画像を選択するコンポーネントです。
+ShopifyImageSelector のフロントエンドコードです。Shopify商品から画像を選択するコンポーネントです。
 
 ## Prerequisites
 
