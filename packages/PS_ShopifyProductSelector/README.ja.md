@@ -1,8 +1,8 @@
-# PS_ShopifyProductSelector
+# ShopifyProductSelector
 
 [English](README.md)
 
-PS_ShopifyProductSelector のフロントエンドコードです。
+ShopifyProductSelector のフロントエンドコードです。
 
 ## Prerequisites
 

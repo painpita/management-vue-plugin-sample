@@ -1,8 +1,8 @@
-# PS_ShopifyProductSelector
+# ShopifyProductSelector
 
 [日本語](README.ja.md)
 
-Frontend code for PS_ShopifyProductSelector.
+Frontend code for ShopifyProductSelector.
 
 ## Prerequisites
 

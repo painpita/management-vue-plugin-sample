@@ -15,6 +15,23 @@
                     <p class="card-handle">{{ selectedImage.altText || '画像名なし' }}</p>
                 </div>
             </div>
+            <button class="copy-btn" @click.stop.prevent="copyImageLinkToClipboard" title="リンクをコピー">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span v-if="showCopyFeedback" class="copy-feedback">コピーしました!</span>
+            </button>
             <button class="remove-btn" @click.stop="removeSelection" title="選択を削除">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -146,6 +163,7 @@ export default {
             selectedProductTitle: '',
             selectedImage: null,
             selectedImageId: '',
+            showCopyFeedback: false,
         };
     },
     created() {
@@ -297,6 +315,21 @@ export default {
             this.selectedProductTitle = '';
             this.selectedImageId = '';
         },
+        async copyImageLinkToClipboard() {
+            if (!this.selectedImage || !this.selectedImage.url) return;
+
+            try {
+                await navigator.clipboard.writeText(this.selectedImage.url);
+                this.showCopyFeedback = true;
+
+                // Hide feedback after 2 seconds
+                setTimeout(() => {
+                    this.showCopyFeedback = false;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy link:', err);
+            }
+        },
         async loadImageFromProduct(productId, imageId) {
             if (!productId || !imageId) return;
 
@@ -396,6 +429,54 @@ export default {
     font-size: 14px;
 }
 
+.copy-btn {
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.copy-btn:hover {
+    color: #0056b3;
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.copy-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.copy-feedback {
+    position: absolute;
+    top: -30px;
+    right: 0;
+    background: #28a745;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .remove-btn {
     background: none;
     border: none;
@@ -411,6 +492,11 @@ export default {
 .remove-btn:hover {
     color: #c82333;
     background: rgba(220, 53, 69, 0.1);
+}
+
+.remove-btn svg {
+    width: 16px;
+    height: 16px;
 }
 
 .modal-overlay {
