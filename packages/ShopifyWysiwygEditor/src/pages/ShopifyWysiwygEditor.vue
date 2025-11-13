@@ -175,9 +175,14 @@ import axios from 'axios';
 import ChildWysiwyg from '@/components/ChildWysiwyg.vue';
 import RcmsI18n from '@/common/i18n/rcms-i18n.js';
 import { globalState } from '@/common/global-state';
-window.rcmsJS.vue.registerVM(Vue, rcms_js_config.publicPath.slice(0, -1)); // eslint-disable-line
 
+// Install RcmsI18n on both the local Vue instance and the global window.Vue if it exists
 Vue.use(RcmsI18n);
+if (window.Vue && window.Vue !== Vue) {
+    window.Vue.use(RcmsI18n);
+}
+
+window.rcmsJS.vue.registerVM(Vue, rcms_js_config.publicPath.slice(0, -1)); // eslint-disable-line
 
 // Global object to track loaded and loading scripts
 // This is needed because every loop of the same field will mount this component with different Vue instance
@@ -239,12 +244,10 @@ export default {
                 const imageDataStr = this.extConfig[0].value[1][2];
 
                 // eslint-disable-next-line no-console
-                console.log('[ShopifyWysiwygEditor] Loading initial image:', { productId, imageDataStr });
 
                 if (productId && imageDataStr) {
                     const imageData = JSON.parse(imageDataStr);
                     // eslint-disable-next-line no-console
-                    console.log('[ShopifyWysiwygEditor] Parsed image data:', imageData);
 
                     if (imageData.imageId) {
                         this.selectedProductId = productId;
