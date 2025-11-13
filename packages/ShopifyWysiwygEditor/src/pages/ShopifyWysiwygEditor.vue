@@ -1,56 +1,85 @@
 <template>
-    <div>
-        <button
-            v-if="!selectedImage"
-            class="btn btn-primary btn-default-width"
-            @click.prevent="show_modal = !show_modal"
-        >
-            画像を選択
-        </button>
-        <div v-if="selectedImage" class="selected-product-card">
-            <div class="card-content" @click="show_modal = true">
-                <img :src="selectedImage.url" :alt="selectedImage.altText || '選択された画像'" class="card-thumbnail" />
-                <div class="card-info">
-                    <h4>{{ selectedProductTitle }}</h4>
-                    <p class="card-handle">{{ selectedImage.altText || '画像名なし' }}</p>
-                </div>
+    <div class="shopify-wysiwyg-editor">
+        <!-- WYSIWYG Editor Section -->
+        <div class="editor-wrapper">
+            <ChildWysiwyg
+                v-if="isWysiwygLoaded"
+                ref="childWysiwyg"
+                :name="extConfig[0].name"
+                :value="editorContent"
+                :options="wysiwygOptions"
+                :upload-dir="uploadDir"
+                :help-message="helpMessage"
+                :is-loaded="isWysiwygLoaded"
+                :activated="true"
+                @input="updateEditorContent"
+            />
+            <div v-else class="loading-notice">
+                <p>Loading WYSIWYG editor...</p>
             </div>
-            <button class="copy-btn" @click.stop.prevent="copyImageLinkToClipboard" title="リンクをコピー">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                >
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                <span v-if="showCopyFeedback" class="copy-feedback">コピーしました!</span>
-            </button>
-            <button class="remove-btn" @click.stop="removeSelection" title="選択を削除">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                >
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                </svg>
-            </button>
         </div>
+
+        <!-- Shopify Image Selector Section -->
+        <div class="shopify-selector-section">
+            <label class="section-label">Shopify商品画像（リンクをコピーしてエディタに貼り付けます）</label>
+            <button
+                v-if="!selectedImage"
+                class="btn btn-primary btn-default-width"
+                @click.prevent="show_modal = !show_modal"
+            >
+                Shopify画像を選択
+            </button>
+            <div v-if="selectedImage" class="selected-product-card">
+                <div class="card-content" @click="show_modal = true">
+                    <img
+                        :src="selectedImage.url"
+                        :alt="selectedImage.altText || '選択された画像'"
+                        class="card-thumbnail"
+                    />
+                    <div class="card-info">
+                        <h4>{{ selectedProductTitle }}</h4>
+                        <p class="card-handle">{{ selectedImage.altText || '画像名なし' }}</p>
+                    </div>
+                </div>
+                <button class="copy-btn" @click.stop.prevent="copyImageLinkToClipboard" title="リンクをコピー">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span v-if="showCopyFeedback" class="copy-feedback">コピーしました!</span>
+                </button>
+                <button class="remove-btn" @click.stop="removeSelection" title="選択を削除">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Shopify Image Selection Modal -->
         <div v-if="show_modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
@@ -134,6 +163,8 @@
                 </div>
             </div>
         </div>
+
+        <!-- Hidden inputs for form submission -->
         <input type="hidden" :name="extConfig[0].name + '[1][1]'" v-model="selectedProductId" />
         <input type="hidden" :name="extConfig[0].name + '[1][2]'" v-model="selectedImageId" />
     </div>
@@ -141,19 +172,46 @@
 <script>
 import Vue from 'vue';
 import axios from 'axios';
-window.rcmsJS.vue.registerVM(Vue, rcms_js_config.publicPath); // eslint-disable-line
+import ChildWysiwyg from '@/components/ChildWysiwyg.vue';
+import RcmsI18n from '@/common/i18n/rcms-i18n.js';
+import { globalState } from '@/common/global-state';
+window.rcmsJS.vue.registerVM(Vue, rcms_js_config.publicPath.slice(0, -1)); // eslint-disable-line
+
+Vue.use(RcmsI18n);
+
+// Global object to track loaded and loading scripts
+// This is needed because every loop of the same field will mount this component with different Vue instance
+// and we need to make sure that the script is loaded only once
+window.scriptLoadingTracker = window.scriptLoadingTracker || {};
+// Same as above, but for kuroco core manifest
+window.kurocoCoreManifestLoadingTracker = window.kurocoCoreManifestLoadingTracker || {};
+
 export default {
-    components: {},
+    __translations: {}, // Initialize empty translations object to prevent errors
+    components: {
+        ChildWysiwyg,
+    },
     props: {
+        smarty_lang: { type: String, required: false },
         NUXT_SHOPIFY_STOREFRONT_DOMAIN: { type: String, default: '' },
         NUXT_SHOPIFY_STOREFRONT_ACCESS_TOKEN: { type: String, default: '' },
         NUXT_SHOPIFY_API_VERSION: { type: String, default: '' },
         extConfig: { type: Array },
+        uploadDir: { type: String, default: '' },
+        helpMessage: { type: String, default: '' },
     },
     data() {
         return {
+            // WYSIWYG Editor state
+            editorContent: '',
+            wysiwygOptions: {
+                height: 400,
+            },
+            isWysiwygLoaded: false,
+
+            // Shopify Image Selector state
             show_modal: false,
-            currentStep: 'product', // 'product' or 'image'
+            currentStep: 'product',
             searchQuery: '',
             products: [],
             productImages: [],
@@ -167,14 +225,27 @@ export default {
         };
     },
     created() {
+        // Load initial editor content
+        if (this.extConfig && this.extConfig[0] && this.extConfig[0].value) {
+            this.editorContent = this.extConfig[0].value[0] || '';
+        }
+
+        globalState.siteLang = this.smarty_lang;
+
         // Load initial image if provided
         if (this.extConfig && this.extConfig[0] && this.extConfig[0].value && this.extConfig[0].value[1]) {
             try {
                 const productId = this.extConfig[0].value[1][1];
                 const imageDataStr = this.extConfig[0].value[1][2];
 
+                // eslint-disable-next-line no-console
+                console.log('[ShopifyWysiwygEditor] Loading initial image:', { productId, imageDataStr });
+
                 if (productId && imageDataStr) {
                     const imageData = JSON.parse(imageDataStr);
+                    // eslint-disable-next-line no-console
+                    console.log('[ShopifyWysiwygEditor] Parsed image data:', imageData);
+
                     if (imageData.imageId) {
                         this.selectedProductId = productId;
                         this.selectedImageId = imageDataStr;
@@ -182,18 +253,189 @@ export default {
                     }
                 }
             } catch (e) {
+                // eslint-disable-next-line no-console
                 console.error('Failed to parse initial value:', e);
             }
         }
     },
+    async mounted() {
+        // Check if ExtWysiwyg is already loaded in Kuroco environment
+        if (window['common/components/extensions/ExtWysiwyg']) {
+            this.isWysiwygLoaded = true;
+        } else {
+            // Try to load it dynamically
+            await this.loadExtWysiwyg();
+        }
+    },
     methods: {
+        async loadExtWysiwyg() {
+            try {
+                const prefixUrl = '/management/js/rcms-vue/components/rcms-mng/';
+
+                // Check if ExtWysiwyg is already loaded
+                if (window['common/components/extensions/ExtWysiwyg']) {
+                    this.isWysiwygLoaded = true;
+                    return;
+                }
+
+                // Initialize global script tracker if not present
+                window.scriptLoadingTracker = window.scriptLoadingTracker || {};
+
+                // Load manifest
+                const loadManifest = async () => {
+                    const kurocoCoreManifestUrl = prefixUrl + 'manifest.json';
+                    return fetch(kurocoCoreManifestUrl).then(response => response.json());
+                };
+
+                const getManifest = async () => {
+                    if (
+                        window.kurocoCoreManifestUrlForPlugin &&
+                        window.kurocoCoreManifestUrlForPlugin.status === 'loaded'
+                    ) {
+                        return window.kurocoCoreManifestUrlForPlugin.manifest;
+                    }
+
+                    if (
+                        window.kurocoCoreManifestUrlForPlugin &&
+                        window.kurocoCoreManifestUrlForPlugin.status === 'loading'
+                    ) {
+                        return window.kurocoCoreManifestUrlForPlugin.promise;
+                    }
+
+                    const manifestPromise = loadManifest();
+                    window.kurocoCoreManifestUrlForPlugin = {
+                        status: 'loading',
+                        promise: manifestPromise,
+                    };
+                    const manifest = await manifestPromise;
+                    window.kurocoCoreManifestUrlForPlugin = {
+                        status: 'loaded',
+                        manifest,
+                    };
+                    return manifest;
+                };
+
+                const manifest = await getManifest();
+
+                // Load vendors first
+                if (manifest['rcms-mng-vendors.js']) {
+                    await this.loadScriptWithTracker(prefixUrl + manifest['rcms-mng-vendors.js']);
+                }
+
+                // Load all core components that ExtWysiwyg depends on
+                const coreComponents = [
+                    'Text',
+                    'Textarea',
+                    'Link',
+                    'RelationFld',
+                    'Selectbox',
+                    'Checkbox',
+                    'Html',
+                    'Date',
+                    'Wysiwyg',
+                    'Image',
+                    'FileManager',
+                    'Location',
+                    'Csvtable',
+                ];
+
+                const componentsToLoad = coreComponents.filter(
+                    component => !window['common/components/extensions/Ext' + component]
+                );
+
+                // Load all CSS files in parallel
+                await Promise.all(
+                    componentsToLoad.map(component => {
+                        if (manifest['common/components/extensions/Ext' + component + '.css'] === undefined) {
+                            return Promise.resolve();
+                        }
+                        return this.loadScriptWithTracker(
+                            prefixUrl + manifest['common/components/extensions/Ext' + component + '.css']
+                        );
+                    })
+                );
+
+                // Load all JS files in parallel
+                await Promise.all(
+                    componentsToLoad.map(component => {
+                        if (manifest['common/components/extensions/Ext' + component + '.js'] === undefined) {
+                            return Promise.resolve();
+                        }
+                        return this.loadScriptWithTracker(
+                            prefixUrl + manifest['common/components/extensions/Ext' + component + '.js']
+                        );
+                    })
+                );
+
+                // Check if ExtWysiwyg is now available
+                if (window['common/components/extensions/ExtWysiwyg']) {
+                    this.isWysiwygLoaded = true;
+                }
+            } catch (error) {
+                // eslint-disable-next-line no-console
+                console.error('Failed to load ExtWysiwyg:', error);
+            }
+        },
+        loadScriptWithTracker(src) {
+            return new Promise((resolve, reject) => {
+                // If the script is already loaded, resolve immediately
+                if (window.scriptLoadingTracker[src] && window.scriptLoadingTracker[src].status === 'loaded') {
+                    resolve();
+                    return;
+                }
+
+                // If the script is being loaded, wait for it to complete
+                if (window.scriptLoadingTracker[src] && window.scriptLoadingTracker[src].status === 'loading') {
+                    window.scriptLoadingTracker[src].promise.then(resolve, reject);
+                    return;
+                }
+
+                // If the script hasn't started loading, start the loading process
+                let script = document.createElement('script');
+                script.src = src;
+                if (src.endsWith('.css')) {
+                    script = document.createElement('link');
+                    script.rel = 'stylesheet';
+                    script.href = src;
+                }
+
+                // Initialize the script loading state and promise
+                let resolveLoading, rejectLoading;
+                const loadingPromise = new Promise((res, rej) => {
+                    resolveLoading = res;
+                    rejectLoading = rej;
+                });
+
+                window.scriptLoadingTracker[src] = {
+                    status: 'loading',
+                    promise: loadingPromise,
+                };
+
+                script.onload = () => {
+                    window.scriptLoadingTracker[src].status = 'loaded';
+                    resolveLoading();
+                    resolve();
+                };
+
+                script.onerror = () => {
+                    window.scriptLoadingTracker[src].status = 'failed';
+                    rejectLoading();
+                    reject(new Error(`Failed to load ${src}`));
+                };
+
+                document.body.appendChild(script);
+            });
+        },
+        updateEditorContent(value) {
+            this.editorContent = value;
+        },
         async getShopifyData(query, variables = {}) {
             if (!this.NUXT_SHOPIFY_STOREFRONT_DOMAIN || !this.NUXT_SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
                 return;
             }
 
             const url = `https://${this.NUXT_SHOPIFY_STOREFRONT_DOMAIN}/api/${this.NUXT_SHOPIFY_API_VERSION}/graphql.json`;
-
+            console.log('getting shopify data from', url);
             const response = await axios.post(
                 url,
                 {
@@ -209,18 +451,17 @@ export default {
             );
 
             if (response.data.errors) {
+                // eslint-disable-next-line no-console
                 console.error('Shopify Storefront API errors:', response.data.errors);
             } else {
                 return response.data;
             }
         },
         handleSearchInput() {
-            // Clear existing timeout
             if (this.searchTimeout) {
                 clearTimeout(this.searchTimeout);
             }
 
-            // Set new timeout for 500ms
             this.searchTimeout = setTimeout(() => {
                 this.searchProducts();
             }, 500);
@@ -279,14 +520,12 @@ export default {
             this.selectedProductId = product.id;
             this.selectedProductTitle = product.title;
 
-            // Extract images from the product
             if (product.images && product.images.edges) {
                 this.productImages = product.images.edges.map(edge => edge.node);
             } else {
                 this.productImages = [];
             }
 
-            // Move to image selection step
             this.currentStep = 'image';
         },
         selectImage(image) {
@@ -294,12 +533,10 @@ export default {
         },
         confirmSelection() {
             if (this.selectedImage && this.selectedProductId) {
-                // Store both product ID and image ID as JSON
                 this.selectedImageId = JSON.stringify({
                     productId: this.selectedProductId,
                     imageId: this.selectedImage.id,
                 });
-                // Emit an event or handle the selection here
                 this.show_modal = false;
             }
         },
@@ -331,11 +568,11 @@ export default {
                 await navigator.clipboard.writeText(this.selectedImage.url);
                 this.showCopyFeedback = true;
 
-                // Hide feedback after 2 seconds
                 setTimeout(() => {
                     this.showCopyFeedback = false;
                 }, 2000);
             } catch (err) {
+                // eslint-disable-next-line no-console
                 console.error('Failed to copy link:', err);
             }
         },
@@ -372,7 +609,6 @@ export default {
                 this.selectedProductId = product.id;
                 this.selectedProductTitle = product.title;
 
-                // Find the specific image
                 if (product.images && product.images.edges) {
                     const imageNode = product.images.edges.find(edge => edge.node.id === imageId);
                     if (imageNode) {
@@ -385,8 +621,45 @@ export default {
 };
 </script>
 <style scoped>
+.shopify-wysiwyg-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.editor-wrapper {
+    width: 100%;
+}
+
+.loading-notice {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.loading-notice p {
+    margin: 0;
+}
+
+.shopify-selector-section {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    margin: 0;
+}
+
 .btn-default-width {
-    width: 120px;
+    width: 160px;
 }
 
 .selected-product-card {
@@ -397,7 +670,7 @@ export default {
     border-radius: 4px;
     background: #f9f9f9;
     transition: all 0.2s;
-    max-width: 400px;
+    max-width: 500px;
 }
 
 .selected-product-card:hover {

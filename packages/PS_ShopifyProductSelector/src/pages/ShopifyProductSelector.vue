@@ -172,13 +172,22 @@ export default {
                                 url
                                 altText
                             }
+                            variants(first: 10) {
+                                nodes {
+                                    sku
+                                }
+                            }
                         }
                     }
                 }
             `;
 
+            // Build search query to include both title and SKU searches
+            const searchTerm = this.searchQuery.trim();
+            const searchQuery = `title:*${searchTerm}* OR sku:*${searchTerm}*`;
+
             const variables = {
-                query: this.searchQuery,
+                query: searchQuery,
             };
 
             const result = await this.getShopifyData(query, variables);
