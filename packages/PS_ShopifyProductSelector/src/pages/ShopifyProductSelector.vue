@@ -94,9 +94,7 @@ export default {
     name: 'ShopifyProductSelector',
     components: {},
     props: {
-        NUXT_SHOPIFY_STOREFRONT_DOMAIN: { type: String, default: '' },
-        NUXT_SHOPIFY_STOREFRONT_ACCESS_TOKEN: { type: String, default: '' },
-        NUXT_SHOPIFY_API_VERSION: { type: String, default: '' },
+        shopifyApiEndpoint: { type: String, required: true },
         extConfig: { type: Array },
     },
     data() {
@@ -117,32 +115,53 @@ export default {
         }
     },
     methods: {
-        async getShopifyData(query, variables = {}) {
-            if (!this.NUXT_SHOPIFY_STOREFRONT_DOMAIN || !this.NUXT_SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
-                return;
+        async fetchProducts(query) {
+            if (!this.shopifyApiEndpoint) {
+                return [];
             }
 
-            const url = `https://${this.NUXT_SHOPIFY_STOREFRONT_DOMAIN}/api/${this.NUXT_SHOPIFY_API_VERSION}/graphql.json`;
+            try {
+                const url = `${this.shopifyApiEndpoint}/${encodeURIComponent(query)}`;
+                const response = await axios.get(url);
 
-            const response = await axios.post(
-                url,
-                {
-                    query,
-                    variables,
-                },
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Shopify-Storefront-Access-Token': this.NUXT_SHOPIFY_STOREFRONT_ACCESS_TOKEN,
-                    },
+                // Handle new API format: { products: [{ product: {...} }], total: N }
+                if (response.data && response.data.products && Array.isArray(response.data.products)) {
+                    return response.data.products.map(item => {
+                        const product = item.product;
+                        return {
+                            ...product,
+                            images: this.transformImages(product.images),
+                        };
+                    });
                 }
-            );
 
-            if (response.data.errors) {
-                console.error('Shopify Storefront API errors:', response.errors);
-            } else {
-                return response.data;
+                // Fallback for single product format: { product: {...} }
+                if (response.data && response.data.product) {
+                    const product = response.data.product;
+                    return [
+                        {
+                            ...product,
+                            images: this.transformImages(product.images),
+                        },
+                    ];
+                }
+
+                return [];
+            } catch (error) {
+                console.error('Failed to fetch products:', error);
+                return [];
             }
+        },
+        transformImages(imagesData) {
+            // Transform from { edges: [{ node: {...} }] } to flat array
+            if (imagesData && imagesData.edges && Array.isArray(imagesData.edges)) {
+                return imagesData.edges.map(edge => edge.node);
+            }
+            // Already flat array or empty
+            if (Array.isArray(imagesData)) {
+                return imagesData;
+            }
+            return [];
         },
         handleSearchInput() {
             // Clear existing timeout
@@ -161,39 +180,7 @@ export default {
                 return;
             }
 
-            const query = `
-                query searchProducts($query: String!) {
-                    products(first: 20, query: $query) {
-                        nodes {
-                            id
-                            title
-                            handle
-                            featuredImage {
-                                url
-                                altText
-                            }
-                            variants(first: 10) {
-                                nodes {
-                                    sku
-                                }
-                            }
-                        }
-                    }
-                }
-            `;
-
-            // Build search query to include both title and SKU searches
-            const searchTerm = this.searchQuery.trim();
-            const searchQuery = `title:*${searchTerm}* OR sku:*${searchTerm}*`;
-
-            const variables = {
-                query: searchQuery,
-            };
-
-            const result = await this.getShopifyData(query, variables);
-            if (result && result.data && result.data.products) {
-                this.products = result.data.products.nodes;
-            }
+            this.products = await this.fetchProducts(this.searchQuery.trim());
         },
         selectProduct(product) {
             this.selectedProduct = product;
@@ -204,29 +191,12 @@ export default {
         async loadProductById(productId) {
             if (!productId) return;
 
-            const query = `
-                query getProduct($id: ID!) {
-                    node(id: $id) {
-                        ... on Product {
-                            id
-                            title
-                            handle
-                            featuredImage {
-                                url
-                                altText
-                            }
-                        }
-                    }
-                }
-            `;
+            // Fetch product by ID
+            const products = await this.fetchProducts(productId);
+            const product = products.find(p => p.id === productId);
 
-            const variables = {
-                id: productId,
-            };
-
-            const result = await this.getShopifyData(query, variables);
-            if (result && result.data && result.data.node) {
-                this.selectedProduct = result.data.node;
+            if (product) {
+                this.selectedProduct = product;
             }
         },
         removeSelection() {

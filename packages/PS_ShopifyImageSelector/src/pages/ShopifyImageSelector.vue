@@ -92,7 +92,7 @@
                                     <h4>{{ product.title }}</h4>
                                     <p class="product-handle">{{ product.handle }}</p>
                                     <p class="product-images-count">
-                                        {{ product.images ? product.images.edges.length : 0 }} 枚の画像
+                                        {{ product.images ? product.images.length : 0 }} 枚の画像
                                     </p>
                                 </div>
                             </div>
@@ -135,7 +135,8 @@
             </div>
         </div>
         <input type="hidden" :name="extConfig[0].name + '[1][1]'" v-model="selectedProductId" />
-        <input type="hidden" :name="extConfig[0].name + '[1][2]'" v-model="selectedImageId" />
+        <input type="hidden" :name="extConfig[0].name + '[1][2]'" v-model="selectedImageUrl" />
+        <input type="hidden" :name="extConfig[0].name + '[1][3]'" v-model="selectedImageId" />
     </div>
 </template>
 <script>
@@ -145,9 +146,7 @@ window.rcmsJS.vue.registerVM(Vue, rcms_js_config.publicPath); // eslint-disable-
 export default {
     components: {},
     props: {
-        NUXT_SHOPIFY_STOREFRONT_DOMAIN: { type: String, default: '' },
-        NUXT_SHOPIFY_STOREFRONT_ACCESS_TOKEN: { type: String, default: '' },
-        NUXT_SHOPIFY_API_VERSION: { type: String, default: '' },
+        shopifyApiEndpoint: { type: String, required: true },
         extConfig: { type: Array },
     },
     data() {
@@ -163,6 +162,7 @@ export default {
             selectedProductTitle: '',
             selectedImage: null,
             selectedImageId: '',
+            selectedImageUrl: '',
             showCopyFeedback: false,
         };
     },
@@ -171,12 +171,14 @@ export default {
         if (this.extConfig && this.extConfig[0] && this.extConfig[0].value && this.extConfig[0].value[1]) {
             try {
                 const productId = this.extConfig[0].value[1][1];
-                const imageDataStr = this.extConfig[0].value[1][2];
+                const imageUrl = this.extConfig[0].value[1][2];
+                const imageDataStr = this.extConfig[0].value[1][3];
 
                 if (productId && imageDataStr) {
                     const imageData = JSON.parse(imageDataStr);
                     if (imageData.imageId) {
                         this.selectedProductId = productId;
+                        this.selectedImageUrl = imageUrl || '';
                         this.selectedImageId = imageDataStr;
                         this.loadImageFromProduct(productId, imageData.imageId);
                     }
@@ -187,32 +189,53 @@ export default {
         }
     },
     methods: {
-        async getShopifyData(query, variables = {}) {
-            if (!this.NUXT_SHOPIFY_STOREFRONT_DOMAIN || !this.NUXT_SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
-                return;
+        async fetchProducts(query) {
+            if (!this.shopifyApiEndpoint) {
+                return [];
             }
 
-            const url = `https://${this.NUXT_SHOPIFY_STOREFRONT_DOMAIN}/api/${this.NUXT_SHOPIFY_API_VERSION}/graphql.json`;
+            try {
+                const url = `${this.shopifyApiEndpoint}/${encodeURIComponent(query)}`;
+                const response = await axios.get(url);
 
-            const response = await axios.post(
-                url,
-                {
-                    query,
-                    variables,
-                },
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Shopify-Storefront-Access-Token': this.NUXT_SHOPIFY_STOREFRONT_ACCESS_TOKEN,
-                    },
+                // Handle new API format: { products: [{ product: {...} }], total: N }
+                if (response.data && response.data.products && Array.isArray(response.data.products)) {
+                    return response.data.products.map(item => {
+                        const product = item.product;
+                        return {
+                            ...product,
+                            images: this.transformImages(product.images),
+                        };
+                    });
                 }
-            );
 
-            if (response.data.errors) {
-                console.error('Shopify Storefront API errors:', response.data.errors);
-            } else {
-                return response.data;
+                // Fallback for single product format: { product: {...} }
+                if (response.data && response.data.product) {
+                    const product = response.data.product;
+                    return [
+                        {
+                            ...product,
+                            images: this.transformImages(product.images),
+                        },
+                    ];
+                }
+
+                return [];
+            } catch (error) {
+                console.error('Failed to fetch products:', error);
+                return [];
             }
+        },
+        transformImages(imagesData) {
+            // Transform from { edges: [{ node: {...} }] } to flat array
+            if (imagesData && imagesData.edges && Array.isArray(imagesData.edges)) {
+                return imagesData.edges.map(edge => edge.node);
+            }
+            // Already flat array or empty
+            if (Array.isArray(imagesData)) {
+                return imagesData;
+            }
+            return [];
         },
         handleSearchInput() {
             // Clear existing timeout
@@ -231,60 +254,15 @@ export default {
                 return;
             }
 
-            const query = `
-                query searchProducts($query: String!) {
-                    products(first: 20, query: $query) {
-                        nodes {
-                            id
-                            title
-                            handle
-                            featuredImage {
-                                url
-                                altText
-                            }
-                            images(first: 250) {
-                                edges {
-                                    node {
-                                        id
-                                        url
-                                        altText
-                                    }
-                                }
-                            }
-                            variants(first: 10) {
-                                nodes {
-                                    sku
-                                }
-                            }
-                        }
-                    }
-                }
-            `;
-
-            // Build search query to include both title and SKU searches
-            const searchTerm = this.searchQuery.trim();
-            const searchQuery = `title:*${searchTerm}* OR sku:*${searchTerm}*`;
-
-            const variables = {
-                query: searchQuery,
-            };
-
-            const result = await this.getShopifyData(query, variables);
-            if (result && result.data && result.data.products) {
-                this.products = result.data.products.nodes;
-            }
+            this.products = await this.fetchProducts(this.searchQuery.trim());
         },
         selectProduct(product) {
             this.selectedProduct = product;
             this.selectedProductId = product.id;
             this.selectedProductTitle = product.title;
 
-            // Extract images from the product
-            if (product.images && product.images.edges) {
-                this.productImages = product.images.edges.map(edge => edge.node);
-            } else {
-                this.productImages = [];
-            }
+            // Extract images from the product (flat array)
+            this.productImages = product.images || [];
 
             // Move to image selection step
             this.currentStep = 'image';
@@ -294,7 +272,9 @@ export default {
         },
         confirmSelection() {
             if (this.selectedImage && this.selectedProductId) {
-                // Store both product ID and image ID as JSON
+                // Store the CDN image URL in the value field
+                this.selectedImageUrl = this.selectedImage.url;
+                // Store image metadata for reload purposes
                 this.selectedImageId = JSON.stringify({
                     productId: this.selectedProductId,
                     imageId: this.selectedImage.id,
@@ -323,6 +303,7 @@ export default {
             this.selectedProductId = '';
             this.selectedProductTitle = '';
             this.selectedImageId = '';
+            this.selectedImageUrl = '';
         },
         async copyImageLinkToClipboard() {
             if (!this.selectedImage || !this.selectedImage.url) return;
@@ -342,41 +323,23 @@ export default {
         async loadImageFromProduct(productId, imageId) {
             if (!productId || !imageId) return;
 
-            const query = `
-                query getProduct($id: ID!) {
-                    node(id: $id) {
-                        ... on Product {
-                            id
-                            title
-                            images(first: 250) {
-                                edges {
-                                    node {
-                                        id
-                                        url
-                                        altText
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            `;
+            // Fetch product by ID
+            const products = await this.fetchProducts(productId);
+            const product = products.find(p => p.id === productId);
 
-            const variables = {
-                id: productId,
-            };
-
-            const result = await this.getShopifyData(query, variables);
-            if (result && result.data && result.data.node) {
-                const product = result.data.node;
+            if (product) {
                 this.selectedProductId = product.id;
                 this.selectedProductTitle = product.title;
 
-                // Find the specific image
-                if (product.images && product.images.edges) {
-                    const imageNode = product.images.edges.find(edge => edge.node.id === imageId);
-                    if (imageNode) {
-                        this.selectedImage = imageNode.node;
+                // Find the specific image (flat array)
+                if (product.images && product.images.length > 0) {
+                    const image = product.images.find(img => img.id === imageId);
+                    if (image) {
+                        this.selectedImage = image;
+                        // Set the URL if not already set
+                        if (!this.selectedImageUrl) {
+                            this.selectedImageUrl = image.url;
+                        }
                     }
                 }
             }
