@@ -1,6 +1,7 @@
 {
   "packages": [
-    "packages/*"
+    "packages/*",
+    "packages/PS_Shopify/*"
   ],
   "useNx": false,
   "version": "independent"
