@@ -28,9 +28,9 @@ const product = normalizeProduct({
     images: { edges: [{ node: { id: 'img1', url: 'https://cdn/1.jpg' } }, { node: { id: 'img2', src: 'old.jpg' } }] },
     variants: {
         edges: [
-            { node: variant('5535125600828R____800S', 'Navy', 'S') },
-            { node: variant('5535125600828R____800M', 'Navy', 'M') },
-            { node: variant('5535125600828R____100S', 'White', 'S') },
+            { node: variant('1000000000002A____800S', 'Navy', 'S') },
+            { node: variant('1000000000002A____800M', 'Navy', 'M') },
+            { node: variant('1000000000002A____100S', 'White', 'S') },
             { node: variant('', 'Black', 'S') },
         ],
     },
@@ -54,8 +54,8 @@ describe('colour variants', () => {
     it('groups sizes by colour and skips variants without SKU', () => {
         const colors = getColorVariants(product, COLOR_NAMES);
         expect(colors.map(c => [c.color, c.sku, c.code])).toEqual([
-            ['Navy', '5535125600828R____800S', '5535125600828R____800'],
-            ['White', '5535125600828R____100S', '5535125600828R____100S'],
+            ['Navy', '1000000000002A____800S', '1000000000002A____800'],
+            ['White', '1000000000002A____100S', '1000000000002A____100S'],
         ]);
     });
 
@@ -71,7 +71,7 @@ describe('colour variants', () => {
     });
 
     it('resolves a stored SKU of any size to its colour', () => {
-        expect(findColorVariantBySku(product, '5535125600828R____800M', COLOR_NAMES).color).toBe('Navy');
+        expect(findColorVariantBySku(product, '1000000000002A____800M', COLOR_NAMES).color).toBe('Navy');
         expect(findColorVariantBySku(product, 'unknown', COLOR_NAMES)).toBeNull();
     });
 
@@ -95,8 +95,8 @@ describe('buildProductResults', () => {
             query: 'tee',
         });
         expect(results.map(r => [r.value, r.code, r.image.url])).toEqual([
-            ['5535125600828R____800S', '5535125600828R____800', 'https://cdn/Navy.jpg'],
-            ['5535125600828R____100S', '5535125600828R____100S', 'https://cdn/White.jpg'],
+            ['1000000000002A____800S', '1000000000002A____800', 'https://cdn/Navy.jpg'],
+            ['1000000000002A____100S', '1000000000002A____100S', 'https://cdn/White.jpg'],
         ]);
     });
 

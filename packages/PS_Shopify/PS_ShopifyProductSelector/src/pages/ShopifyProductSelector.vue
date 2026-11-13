@@ -285,7 +285,7 @@ export default {
         /**
          * One entry per colour (first variant with a SKU for that colour), in Shopify's variant order.
          * `skus` holds the SKUs of every size of that colour, and `code` their common prefix
-         * (e.g. 1533507330127Y____002S / ...002M => 1533507330127Y____002).
+         * (e.g. 1000000000001A____002S / ...002M => 1000000000001A____002).
          * Returns [] when the product has no colour option or the API does not return `selectedOptions`.
          */
         getColorVariants(product) {
@@ -323,7 +323,7 @@ export default {
             });
         },
         /**
-         * When the query is part of some colours' SKUs (e.g. "1533507330127Y____002"), keep only those colours.
+         * When the query is part of some colours' SKUs (e.g. "1000000000001A____002"), keep only those colours.
          * Otherwise (title search, or a code shared by every colour) all colours are kept.
          */
         filterColorVariantsBySku(colorVariants, query) {
